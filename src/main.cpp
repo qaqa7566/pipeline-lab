@@ -5,6 +5,7 @@
 // Assembles a program and runs it on the sequential interpreter and/or the
 // 5-stage pipeline simulator, printing a cycle-by-cycle diagram, a performance
 // report, and final architectural state.
+#include <charconv>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -30,6 +31,19 @@ struct Options {
   bool forwarding = true;
   int memWords = 0;
 };
+
+// Parses a --mem word count: a fully-numeric, non-negative value that fits in
+// an int. Returns false (rather than throwing) on garbage or overflow so the
+// caller can report a clean error instead of aborting.
+bool parseMemCount(const std::string& s, int& out) {
+  const char* begin = s.data();
+  const char* end = begin + s.size();
+  int value = 0;
+  const auto [ptr, ec] = std::from_chars(begin, end, value);
+  if (ec != std::errc() || ptr != end || value < 0) return false;
+  out = value;
+  return true;
+}
 
 void printUsage(const char* prog) {
   std::cout <<
@@ -95,7 +109,11 @@ int main(int argc, char** argv) {
         std::cerr << "error: --mem requires a count\n";
         return 2;
       }
-      opts.memWords = std::stoi(argv[++i]);
+      const std::string val = argv[++i];
+      if (!parseMemCount(val, opts.memWords)) {
+        std::cerr << "error: invalid --mem count '" << val << "'\n";
+        return 2;
+      }
     } else if (!a.empty() && a[0] == '-') {
       std::cerr << "error: unknown option '" << a << "'\n";
       return 2;
