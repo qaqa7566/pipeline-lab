@@ -1,5 +1,7 @@
 # Pipeline Lab
 
+[![CI](https://github.com/qaqa7566/pipeline-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/qaqa7566/pipeline-lab/actions/workflows/ci.yml)
+
 A tiny compiler toolchain and a cycle-accurate **5-stage CPU pipeline simulator**,
 built around a custom RISC-style instruction set. It takes assembly source through
 a real 32-bit machine-code encoding, runs it on both a sequential reference
@@ -19,8 +21,6 @@ assembly source ─▶ lexer ─▶ parser ─▶ two-pass assembler ─▶ 32-b
                                                                      ▼
                                               ASCII trace + performance report
 ```
-
-A future version (V2) adds a tiny C-like frontend that lowers to this assembly.
 
 ## Highlights
 
@@ -46,6 +46,33 @@ cmake -S . -B build
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
+
+## Demo
+
+`examples/array_sum.asm` walks an array and accumulates the sum, so it has both a
+load-use dependency and a loop branch — a good case for seeing forwarding earn its
+keep. Run it once with forwarding (the default) and once without:
+
+```sh
+# With forwarding (default)
+./build/src/plab examples/array_sum.asm --pipeline --stats
+
+# Without forwarding
+./build/src/plab examples/array_sum.asm --pipeline --stats --no-forward
+```
+
+The two runs execute the same instructions and land on the same final state; only
+the pipeline behavior differs:
+
+| Run           | Cycles | Stall cycles | Forwards |
+|---------------|:------:|:------------:|:--------:|
+| forwarding    |   33   |      3       |    10    |
+| no forwarding |   49   |     19       |     0    |
+
+Turning forwarding off trades all 10 forwards for stalls, and the RAW hazards that
+were hidden behind those forwards now cost 16 extra stall cycles (3 → 19). Add
+`--trace` (or run with no flags for the full default output) to also see the
+cycle-by-cycle diagram.
 
 ## Run
 
@@ -86,6 +113,22 @@ Reading the diagram: a **repeated `ID`** cell is a stall bubble; a row that reac
 only `IF`/`ID` and then disappears was **squashed by a flush** (the two instructions
 behind a taken branch). Run `examples/array_sum.asm` to see the load-use stall.
 
+### CLI flags
+
+With no flags, `plab` runs `--pipeline --trace --stats --regs`. Passing any flag
+switches to an explicit set, so list exactly what you want.
+
+| Flag           | Effect                                                        |
+|----------------|--------------------------------------------------------------|
+| `--pipeline`   | run the 5-stage pipeline simulator                           |
+| `--interp`     | run the sequential reference interpreter                     |
+| `--trace`      | print the cycle-by-cycle pipeline diagram                    |
+| `--stats`      | print the performance report (cycles, CPI/IPC, stalls, …)    |
+| `--regs`       | print the final register file                                |
+| `--mem N`      | print the first `N` words of data memory                     |
+| `--no-forward` | disable operand forwarding (pipeline only; more stalls)      |
+| `-h`, `--help` | show usage                                                   |
+
 ## Instruction set at a glance
 
 Registers `r0`–`r15` (`r0` hardwired to zero). Byte-addressed, word-aligned memory.
@@ -114,6 +157,21 @@ docs/                            ISA, pipeline, and architecture references
 
 See [`docs/architecture.md`](docs/architecture.md) for the module map and how the
 interpreter is used as a correctness oracle.
+
+## Known limitations / non-goals
+
+This is a teaching-scale model of one specific microarchitecture, not a
+general-purpose simulator. On purpose, V1 does not model:
+
+- **Memory timing** — loads and stores complete in a single cycle; there is no
+  memory latency.
+- **Caches** — no I-cache or D-cache, and therefore no miss penalties.
+- **Dynamic branch prediction** — the pipeline is fixed predict-not-taken and
+  resolves branches in EX; there is no BTB or history-based predictor.
+- **Anything beyond a scalar, in-order 5-stage pipeline** — no superscalar issue,
+  no out-of-order execution, no register renaming.
+- **`ret`** acts as a halt in V1 (there is no call stack yet).
+- A **C-like frontend** is future work, not part of this repo — see the roadmap.
 
 ## Roadmap
 
