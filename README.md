@@ -64,10 +64,10 @@ keep. Run it once with forwarding (the default) and once without:
 The two runs execute the same instructions and land on the same final state; only
 the pipeline behavior differs:
 
-| Run           | Cycles | Stall cycles | Forwards |
-|---------------|:------:|:------------:|:--------:|
-| forwarding    |   33   |      3       |    10    |
-| no forwarding |   49   |     19       |     0    |
+| Run | Cycles | Stall cycles | Forwards |
+|---|---:|---:|---:|
+| forwarding | 33 | 3 | 10 |
+| no forwarding | 49 | 19 | 0 |
 
 Turning forwarding off trades all 10 forwards for stalls, and the RAW hazards that
 were hidden behind those forwards now cost 16 extra stall cycles (3 → 19). Add
@@ -118,29 +118,29 @@ behind a taken branch). Run `examples/array_sum.asm` to see the load-use stall.
 With no flags, `plab` runs `--pipeline --trace --stats --regs`. Passing any flag
 switches to an explicit set, so list exactly what you want.
 
-| Flag           | Effect                                                        |
-|----------------|--------------------------------------------------------------|
-| `--pipeline`   | run the 5-stage pipeline simulator                           |
-| `--interp`     | run the sequential reference interpreter                     |
-| `--trace`      | print the cycle-by-cycle pipeline diagram                    |
-| `--stats`      | print the performance report (cycles, CPI/IPC, stalls, …)    |
-| `--regs`       | print the final register file                                |
-| `--mem N`      | print the first `N` words of data memory                     |
-| `--no-forward` | disable operand forwarding (pipeline only; more stalls)      |
-| `-h`, `--help` | show usage                                                   |
+| Flag | Effect |
+|---|---|
+| `--pipeline` | run the 5-stage pipeline simulator |
+| `--interp` | run the sequential reference interpreter |
+| `--trace` | print the cycle-by-cycle pipeline diagram |
+| `--stats` | print the performance report (cycles, CPI/IPC, stalls, …) |
+| `--regs` | print the final register file |
+| `--mem N` | print the first `N` words of data memory |
+| `--no-forward` | disable operand forwarding (pipeline only; more stalls) |
+| `-h`, `--help` | show usage |
 
 ## Instruction set at a glance
 
 Registers `r0`–`r15` (`r0` hardwired to zero). Byte-addressed, word-aligned memory.
 
-| Class      | Instructions                              |
-|------------|-------------------------------------------|
-| ALU (reg)  | `add sub and or xor sll srl slt`          |
-| ALU (imm)  | `addi andi ori xori slti`                 |
-| Memory     | `lw rd, off(rs)` · `sw rd, off(rs)`       |
-| Branch     | `beq bne blt` (PC-relative)               |
-| Jump       | `j` · `jal` · `ret` / `halt`              |
-| Pseudo     | `nop` · `mov rd, rs` · `li rd, imm`       |
+| Class | Instructions |
+|---|---|
+| ALU (reg) | `add sub and or xor sll srl slt` |
+| ALU (imm) | `addi andi ori xori slti` |
+| Memory | `lw rd, off(rs)` · `sw rd, off(rs)` |
+| Branch | `beq bne blt` (PC-relative) |
+| Jump | `j` · `jal` · `ret` / `halt` |
+| Pseudo | `nop` · `mov rd, rs` · `li rd, imm` |
 
 Full semantics, encoding tables, and the assembly grammar are in
 [`docs/isa.md`](docs/isa.md).
